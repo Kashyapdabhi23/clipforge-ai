@@ -70,9 +70,12 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
     if clean_url.endswith((".mp4", ".mov", ".mkv", ".webm")) or "videoplayback" in url.lower() or "googlevideo.com" in url.lower():
         return download_direct_stream(url)
 
-    # Check if RapidAPI key is provided via param or config
+    # Check if cookies.txt exists for direct authenticated yt-dlp download
+    has_cookies = any(p.exists() for p in [Path("cookies.txt"), Path(__file__).resolve().parent.parent.parent / "cookies.txt", Path("/app/cookies.txt")])
+
+    # Check if RapidAPI key is provided via param or config (used if no cookies)
     api_key = rapidapi_key or RAPIDAPI_KEY or os.getenv("RAPIDAPI_KEY")
-    if api_key and ("youtube.com" in url or "youtu.be" in url):
+    if not has_cookies and api_key and ("youtube.com" in url or "youtu.be" in url):
         import requests
         import re
         # Extract YouTube Video ID
