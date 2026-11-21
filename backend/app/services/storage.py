@@ -169,21 +169,40 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
             "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US; Pixel 8 Pro Build/UQ1A.240205.004) gzip"
         }
 
-    logger.info(f"Downloading authorized URL: {url}")
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-        # In case extension changed after merge_output_format
-        if not os.path.exists(filename):
-            base_p = str(Path(filename).with_suffix(""))
-            for ext in [".mp4", ".mkv", ".webm"]:
-                if os.path.exists(base_p + ext):
-                    filename = base_p + ext
-                    break
+    if FFMPEG_PATH:
+        ydl_opts["ffmpeg_location"] = str(FFMPEG_PATH)
 
-        file_size = os.path.getsize(filename)
-        title = info.get("title", "Online Video")
-        return filename, title, file_size
+    logger.info(f"Downloading authorized URL: {url}")
+    info = None
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+    except Exception as first_err:
+        err_msg = str(first_err).lower()
+        logger.warning(f"Initial yt-dlp attempt failed: {first_err}. Attempting fallback...")
+        if "format is not available" in err_msg or "only images are available" in err_msg:
+            # Fallback 1: any available stream without strict format constraints
+            fallback_opts = dict(ydl_opts)
+            fallback_opts["format"] = "best/b/worst"
+            if "extractor_args" in fallback_opts:
+                del fallback_opts["extractor_args"]
+            with yt_dlp.YoutubeDL(fallback_opts) as ydl2:
+                info = ydl2.extract_info(url, download=True)
+        else:
+            raise first_err
+
+    filename = info.get("_filename") or (ydl.prepare_filename(info) if 'ydl' in locals() else str(UPLOADS_DIR / f"{unique_id}_video.mp4"))
+    # In case extension changed after merge_output_format
+    if not os.path.exists(filename):
+        base_p = str(Path(filename).with_suffix(""))
+        for ext in [".mp4", ".mkv", ".webm"]:
+            if os.path.exists(base_p + ext):
+                filename = base_p + ext
+                break
+
+    file_size = os.path.getsize(filename)
+    title = info.get("title", "Online Video")
+    return filename, title, file_size
 
 def get_storage_stats() -> float:
     """

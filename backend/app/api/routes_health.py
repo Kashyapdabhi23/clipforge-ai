@@ -14,11 +14,14 @@ async def health_check():
     """
     Validates backend API health and subsystem readiness.
     """
+    import subprocess, shutil
+    node_v = subprocess.getoutput("node -v") if shutil.which("node") else "not installed"
     ffmpeg_ok = os.path.exists(FFMPEG_PATH) if FFMPEG_PATH else False
     return {
         "status": "online",
         "app": "ClipForge AI",
-        "version": "1.0.0",
+        "version": "1.0.1",
+        "node_version": node_v,
         "ffmpeg_path": FFMPEG_PATH,
         "ffmpeg_ready": ffmpeg_ok,
         "whisper_model": WHISPER_MODEL_NAME,
