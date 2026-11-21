@@ -131,6 +131,7 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
         "quiet": False,
         "no_warnings": False,
         "max_filesize": 10 * 1024 * 1024 * 1024,  # 10 GB limit
+        "js_runtimes": {"node": {}},
     }
 
     # Use cookies.txt if present to authenticate on cloud servers
