@@ -6,7 +6,7 @@ from typing import Tuple, Optional
 import aiofiles
 from fastapi import UploadFile
 
-from app.core.config import UPLOADS_DIR, TEMP_DIR, CLIPS_DIR, THUMBNAILS_DIR, STORAGE_DIR, ALLOWED_EXTENSIONS, RAPIDAPI_KEY
+from app.core.config import UPLOADS_DIR, TEMP_DIR, CLIPS_DIR, THUMBNAILS_DIR, STORAGE_DIR, ALLOWED_EXTENSIONS, RAPIDAPI_KEY, FFMPEG_PATH
 from app.core.logging import logger
 
 async def save_upload_file(upload_file: UploadFile) -> Tuple[str, str, int]:
