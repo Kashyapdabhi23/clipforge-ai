@@ -32,6 +32,15 @@ app.mount("/static/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uplo
 app.mount("/static/clips", StaticFiles(directory=str(CLIPS_DIR)), name="clips")
 app.mount("/static/thumbnails", StaticFiles(directory=str(THUMBNAILS_DIR)), name="thumbnails")
 
+# Root check
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "app": "ClipForge AI Backend",
+        "version": "1.0.0"
+    }
+
 # Register API routers
 app.include_router(routes_health.router)
 app.include_router(routes_upload.router)
