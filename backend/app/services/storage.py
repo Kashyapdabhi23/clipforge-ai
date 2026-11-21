@@ -32,7 +32,7 @@ async def save_upload_file(upload_file: UploadFile) -> Tuple[str, str, int]:
     logger.info(f"Saved uploaded file: {destination_path} ({total_bytes / (1024*1024):.2f} MB)")
     return str(destination_path), upload_file.filename, total_bytes
 
-def download_direct_stream(url: str) -> Tuple[str, str, int]:
+def download_direct_stream(url: str, custom_title: Optional[str] = None) -> Tuple[str, str, int]:
     """
     Downloads direct video link (.mp4, .mov, .webm) via chunked streaming with requests.
     """
@@ -47,7 +47,10 @@ def download_direct_stream(url: str) -> Tuple[str, str, int]:
     dest = UPLOADS_DIR / f"{unique_id}_stream{ext}"
     logger.info(f"Downloading direct video stream: {url}")
     total_bytes = 0
-    with requests.get(url, stream=True, timeout=60, headers={"User-Agent": "Mozilla/5.0"}) as r:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
+    with requests.get(url, stream=True, timeout=90, headers=headers) as r:
         r.raise_for_status()
         with open(dest, "wb") as f:
             for chunk in r.iter_content(chunk_size=1024 * 1024):
@@ -55,7 +58,7 @@ def download_direct_stream(url: str) -> Tuple[str, str, int]:
                     f.write(chunk)
                     total_bytes += len(chunk)
 
-    title = Path(url.split("?")[0]).stem or "Online Video"
+    title = custom_title or Path(url.split("?")[0]).stem or "Online Video"
     return str(dest), title, total_bytes
 
 def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tuple[str, str, int]:
@@ -64,7 +67,7 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
     """
     # If direct video link, download via HTTP streaming directly
     clean_url = url.split("?")[0].lower()
-    if clean_url.endswith((".mp4", ".mov", ".mkv", ".webm")):
+    if clean_url.endswith((".mp4", ".mov", ".mkv", ".webm")) or "videoplayback" in url.lower() or "googlevideo.com" in url.lower():
         return download_direct_stream(url)
 
     # Check if RapidAPI key is provided via param or config
@@ -76,40 +79,41 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
         match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11})", url)
         if match:
             video_id = match.group(1)
-            logger.info(f"Fetching video {video_id} via RapidAPI downloader...")
+            logger.info(f"Fetching YouTube video {video_id} via RapidAPI downloader...")
+            # Try 1: yt-api
             try:
-                rapid_url = "https://youtube-media-downloader.p.rapidapi.com/v2/video/details"
-                headers = {
-                    "X-RapidAPI-Key": api_key,
-                    "X-RapidAPI-Host": "youtube-media-downloader.p.rapidapi.com"
-                }
-                res = requests.get(rapid_url, headers=headers, params={"videoId": video_id}, timeout=15)
-                if res.status_code == 200:
-                    data = res.json()
-                    title = data.get("title", "YouTube Video")
-                    streams = data.get("videos", {}).get("items", [])
-                    if streams:
-                        download_url = streams[0].get("url")
-                        return download_direct_stream(download_url)
-            except Exception as e:
-                logger.warning(f"RapidAPI endpoint 1 failed: {e}")
-
-            try:
-                # Fallback to yt-api RapidAPI
                 yt_api_url = "https://yt-api.p.rapidapi.com/dl"
-                headers2 = {
+                headers1 = {
                     "X-RapidAPI-Key": api_key,
                     "X-RapidAPI-Host": "yt-api.p.rapidapi.com"
                 }
-                res2 = requests.get(yt_api_url, headers=headers2, params={"id": video_id}, timeout=15)
+                res1 = requests.get(yt_api_url, headers=headers1, params={"id": video_id}, timeout=15)
+                if res1.status_code == 200:
+                    d1 = res1.json()
+                    title = d1.get("title", "YouTube Video")
+                    formats = d1.get("formats", [])
+                    if formats and formats[0].get("url"):
+                        logger.info(f"yt-api resolved stream for: {title}")
+                        return download_direct_stream(formats[0].get("url"), custom_title=title)
+            except Exception as e:
+                logger.warning(f"RapidAPI yt-api failed: {e}")
+
+            # Try 2: youtube-media-downloader
+            try:
+                rapid_url = "https://youtube-media-downloader.p.rapidapi.com/v2/video/details"
+                headers2 = {
+                    "X-RapidAPI-Key": api_key,
+                    "X-RapidAPI-Host": "youtube-media-downloader.p.rapidapi.com"
+                }
+                res2 = requests.get(rapid_url, headers=headers2, params={"videoId": video_id}, timeout=15)
                 if res2.status_code == 200:
                     d2 = res2.json()
                     title = d2.get("title", "YouTube Video")
-                    formats = d2.get("formats", [])
-                    if formats:
-                        return download_direct_stream(formats[0].get("url"))
+                    streams = d2.get("videos", {}).get("items", [])
+                    if streams and streams[0].get("url"):
+                        return download_direct_stream(streams[0].get("url"), custom_title=title)
             except Exception as e:
-                logger.warning(f"RapidAPI endpoint 2 failed: {e}")
+                logger.warning(f"RapidAPI media downloader failed: {e}")
 
     import yt_dlp
 
