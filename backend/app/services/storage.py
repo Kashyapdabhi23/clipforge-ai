@@ -132,9 +132,15 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
         "no_warnings": False,
         "max_filesize": 10 * 1024 * 1024 * 1024,  # 10 GB limit
         "js_runtimes": {"node": {}},
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["tv", "web_safari", "android"],
+                "formats": ["missing_pot"]
+            }
+        }
     }
 
-    # Use cookies.txt if present to authenticate on cloud servers
+    # Use cookies.txt if present
     cookie_found = False
     for c_path in [Path("cookies.txt"), Path(__file__).resolve().parent.parent.parent / "cookies.txt", Path("/app/cookies.txt")]:
         if c_path.exists():
@@ -151,24 +157,8 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Accept-Language": "en-US,en;q=0.9",
             }
-            ydl_opts["extractor_args"] = {
-                "youtube": {
-                    "player_client": ["web", "mweb", "android", "ios"]
-                }
-            }
             cookie_found = True
             break
-
-    if not cookie_found:
-        ydl_opts["extractor_args"] = {
-            "youtube": {
-                "player_client": ["android", "ios", "mweb"],
-                "player_skip": ["webpage", "configs"]
-            }
-        }
-        ydl_opts["http_headers"] = {
-            "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US; Pixel 8 Pro Build/UQ1A.240205.004) gzip"
-        }
 
     if FFMPEG_PATH:
         ydl_opts["ffmpeg_location"] = str(FFMPEG_PATH)
@@ -180,17 +170,19 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
             info = ydl.extract_info(url, download=True)
     except Exception as first_err:
         err_msg = str(first_err).lower()
-        logger.warning(f"Initial yt-dlp attempt failed: {first_err}. Attempting fallback...")
-        if "format is not available" in err_msg or "only images are available" in err_msg:
-            # Fallback 1: any available stream without strict format constraints
-            fallback_opts = dict(ydl_opts)
-            fallback_opts["format"] = "best/b/worst"
-            if "extractor_args" in fallback_opts:
-                del fallback_opts["extractor_args"]
-            with yt_dlp.YoutubeDL(fallback_opts) as ydl2:
-                info = ydl2.extract_info(url, download=True)
-        else:
-            raise first_err
+        logger.warning(f"Initial yt-dlp attempt failed: {first_err}. Attempting TV-client fallback without account cookies...")
+        # Fallback: TV client without cookiefile to completely avoid GVS PO Token block
+        fallback_opts = dict(ydl_opts)
+        fallback_opts["format"] = "best/b/worst"
+        fallback_opts.pop("cookiefile", None)
+        fallback_opts["extractor_args"] = {
+            "youtube": {
+                "player_client": ["tv", "tv_embedded"],
+                "formats": ["missing_pot"]
+            }
+        }
+        with yt_dlp.YoutubeDL(fallback_opts) as ydl2:
+            info = ydl2.extract_info(url, download=True)
 
     filename = info.get("_filename") or (ydl.prepare_filename(info) if 'ydl' in locals() else str(UPLOADS_DIR / f"{unique_id}_video.mp4"))
     # In case extension changed after merge_output_format
