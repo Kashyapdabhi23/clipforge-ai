@@ -77,19 +77,39 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
         if match:
             video_id = match.group(1)
             logger.info(f"Fetching video {video_id} via RapidAPI downloader...")
-            rapid_url = "https://youtube-media-downloader.p.rapidapi.com/v2/video/details"
-            headers = {
-                "X-RapidAPI-Key": api_key,
-                "X-RapidAPI-Host": "youtube-media-downloader.p.rapidapi.com"
-            }
-            res = requests.get(rapid_url, headers=headers, params={"videoId": video_id}, timeout=15)
-            if res.status_code == 200:
-                data = res.json()
-                title = data.get("title", "YouTube Video")
-                streams = data.get("videos", {}).get("items", [])
-                if streams:
-                    download_url = streams[0].get("url")
-                    return download_direct_stream(download_url)
+            try:
+                rapid_url = "https://youtube-media-downloader.p.rapidapi.com/v2/video/details"
+                headers = {
+                    "X-RapidAPI-Key": api_key,
+                    "X-RapidAPI-Host": "youtube-media-downloader.p.rapidapi.com"
+                }
+                res = requests.get(rapid_url, headers=headers, params={"videoId": video_id}, timeout=15)
+                if res.status_code == 200:
+                    data = res.json()
+                    title = data.get("title", "YouTube Video")
+                    streams = data.get("videos", {}).get("items", [])
+                    if streams:
+                        download_url = streams[0].get("url")
+                        return download_direct_stream(download_url)
+            except Exception as e:
+                logger.warning(f"RapidAPI endpoint 1 failed: {e}")
+
+            try:
+                # Fallback to yt-api RapidAPI
+                yt_api_url = "https://yt-api.p.rapidapi.com/dl"
+                headers2 = {
+                    "X-RapidAPI-Key": api_key,
+                    "X-RapidAPI-Host": "yt-api.p.rapidapi.com"
+                }
+                res2 = requests.get(yt_api_url, headers=headers2, params={"id": video_id}, timeout=15)
+                if res2.status_code == 200:
+                    d2 = res2.json()
+                    title = d2.get("title", "YouTube Video")
+                    formats = d2.get("formats", [])
+                    if formats:
+                        return download_direct_stream(formats[0].get("url"))
+            except Exception as e:
+                logger.warning(f"RapidAPI endpoint 2 failed: {e}")
 
     import yt_dlp
 
@@ -103,6 +123,15 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
         "quiet": True,
         "no_warnings": True,
         "max_filesize": 10 * 1024 * 1024 * 1024,  # 10 GB limit
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "mweb"],
+                "player_skip": ["webpage", "configs"]
+            }
+        },
+        "http_headers": {
+            "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US; Pixel 8 Pro Build/UQ1A.240205.004) gzip"
+        }
     }
 
     logger.info(f"Downloading authorized URL: {url}")
