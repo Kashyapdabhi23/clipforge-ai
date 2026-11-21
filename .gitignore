@@ -1,0 +1,38 @@
+# Virtual environment
+backend/venv/
+venv/
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Database
+*.db
+backend/clipforge.db
+
+# Storage artifacts (clips, uploads, temp)
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+backend/storage/clips/*
+!backend/storage/clips/.gitkeep
+backend/storage/thumbnails/*
+!backend/storage/thumbnails/.gitkeep
+backend/storage/temp/*
+!backend/storage/temp/.gitkeep
+backend/storage/processed/*
+!backend/storage/processed/.gitkeep
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+*.local
+
+# Binaries
+cloudflared.exe
+*.exe
+
+# Logs
+*.log
