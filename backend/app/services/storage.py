@@ -138,6 +138,13 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
         }
     }
 
+    # Use cookies.txt if present to bypass bot gate on cloud servers
+    for c_path in [Path("cookies.txt"), Path(__file__).resolve().parent.parent.parent / "cookies.txt", Path("/app/cookies.txt")]:
+        if c_path.exists():
+            logger.info(f"Using authenticated YouTube cookies from: {c_path}")
+            ydl_opts["cookiefile"] = str(c_path)
+            break
+
     logger.info(f"Downloading authorized URL: {url}")
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
