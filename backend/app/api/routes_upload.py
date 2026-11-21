@@ -142,11 +142,10 @@ async def upload_video_url(
     except Exception as e:
         logger.error(f"URL ingestion failed: {e}")
         err_str = str(e)
-        if "10054" in err_str or "forcibly closed" in err_str or "youtube" in url.lower() or "youtu.be" in url.lower():
+        if "confirm you're not a bot" in err_str.lower() or "bot gate" in err_str.lower() or "sign in to confirm" in err_str.lower():
             friendly_msg = (
-                "YouTube blocked automated download access (Connection Reset / Bot Gate). "
-                "YouTube terms and security systems restrict automated scrapers from downloading directly. "
-                "Please switch to the 'Upload Video File' tab to upload the video file directly from your computer for 100% reliable AI clipping."
+                "YouTube requires sign-in verification for this video. "
+                "Please update cookies.txt or switch to the 'Upload Video File' tab."
             )
             raise HTTPException(status_code=400, detail=friendly_msg)
-        raise HTTPException(status_code=400, detail=f"Failed to fetch video from URL: {err_str}")
+        raise HTTPException(status_code=400, detail=f"Failed to fetch video: {err_str}")

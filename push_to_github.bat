@@ -7,6 +7,8 @@ echo   https://github.com/Kashyapdabhi23/clipforge-ai
 echo ========================================================
 echo.
 cd /d D:\clipforge-ai
+git add -A
+git commit -m "fix: flexible yt-dlp format selection and accurate error reporting"
 git push -u origin main
 echo.
 if %ERRORLEVEL% EQU 0 (

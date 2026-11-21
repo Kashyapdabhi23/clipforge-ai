@@ -125,34 +125,50 @@ def download_authorized_url(url: str, rapidapi_key: Optional[str] = None) -> Tup
 
     ydl_opts = {
         "outtmpl": out_tmpl,
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "format": "bestvideo+bestaudio/best",
+        "merge_output_format": "mp4",
         "noplaylist": True,
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,
+        "no_warnings": False,
         "max_filesize": 10 * 1024 * 1024 * 1024,  # 10 GB limit
-        "extractor_args": {
+    }
+
+    # Use cookies.txt if present to authenticate on cloud servers
+    cookie_found = False
+    for c_path in [Path("cookies.txt"), Path(__file__).resolve().parent.parent.parent / "cookies.txt", Path("/app/cookies.txt")]:
+        if c_path.exists():
+            logger.info(f"Using authenticated YouTube cookies from: {c_path}")
+            try:
+                temp_cookie = TEMP_DIR / "session_cookies.txt"
+                shutil.copy2(c_path, temp_cookie)
+                ydl_opts["cookiefile"] = str(temp_cookie)
+            except Exception as e:
+                logger.warning(f"Could not copy cookiefile, using direct: {e}")
+                ydl_opts["cookiefile"] = str(c_path)
+
+            ydl_opts["http_headers"] = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+            cookie_found = True
+            break
+
+    if not cookie_found:
+        ydl_opts["extractor_args"] = {
             "youtube": {
                 "player_client": ["android", "ios", "mweb"],
                 "player_skip": ["webpage", "configs"]
             }
-        },
-        "http_headers": {
+        }
+        ydl_opts["http_headers"] = {
             "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 14; en_US; Pixel 8 Pro Build/UQ1A.240205.004) gzip"
         }
-    }
-
-    # Use cookies.txt if present to bypass bot gate on cloud servers
-    for c_path in [Path("cookies.txt"), Path(__file__).resolve().parent.parent.parent / "cookies.txt", Path("/app/cookies.txt")]:
-        if c_path.exists():
-            logger.info(f"Using authenticated YouTube cookies from: {c_path}")
-            ydl_opts["cookiefile"] = str(c_path)
-            break
 
     logger.info(f"Downloading authorized URL: {url}")
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info)
-        # In case extension changed
+        # In case extension changed after merge_output_format
         if not os.path.exists(filename):
             base_p = str(Path(filename).with_suffix(""))
             for ext in [".mp4", ".mkv", ".webm"]:
