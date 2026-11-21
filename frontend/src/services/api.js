@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const API_BASE = '/api';
+export const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
+const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
+
+export const resolveMediaUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return BACKEND_URL ? `${BACKEND_URL}${path}` : path;
+};
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -87,8 +94,8 @@ export const deleteClip = async (clipId) => {
   return res.data;
 };
 
-export const getZipDownloadUrl = (jobId) => `/api/jobs/${jobId}/download`;
-export const getClipDownloadUrl = (clipId) => `/api/clips/${clipId}/download`;
-export const getSubtitleDownloadUrl = (clipId, format = 'srt') => `/api/clips/${clipId}/subtitles?format=${format}`;
+export const getZipDownloadUrl = (jobId) => `${BACKEND_URL}/api/jobs/${jobId}/download`;
+export const getClipDownloadUrl = (clipId) => `${BACKEND_URL}/api/clips/${clipId}/download`;
+export const getSubtitleDownloadUrl = (clipId, format = 'srt') => `${BACKEND_URL}/api/clips/${clipId}/subtitles?format=${format}`;
 
 export default api;

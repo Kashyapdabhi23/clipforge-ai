@@ -13,7 +13,7 @@ import {
   FileVideo,
   Loader2
 } from 'lucide-react';
-import { uploadVideoFile, uploadVideoUrl, createClippingJob } from '../services/api';
+import { uploadVideoFile, uploadVideoUrl, createClippingJob, resolveMediaUrl } from '../services/api';
 
 export default function CreateClips({ setActiveTab, setRecentJobId }) {
   // Input method: 'upload' | 'url'
@@ -210,7 +210,7 @@ export default function CreateClips({ setActiveTab, setRecentJobId }) {
             <div className="w-28 h-32 rounded-lg bg-black shrink-0 overflow-hidden relative border border-slate-700">
               {uploadedProject.thumbnail_url ? (
                 <img
-                  src={uploadedProject.thumbnail_url}
+                  src={resolveMediaUrl(uploadedProject.thumbnail_url)}
                   alt="Thumbnail"
                   className="w-full h-full object-cover"
                 />

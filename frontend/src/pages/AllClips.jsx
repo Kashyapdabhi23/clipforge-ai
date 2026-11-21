@@ -13,7 +13,7 @@ import {
   Loader2,
   FolderKanban
 } from 'lucide-react';
-import { listClips, deleteClip, getClipDownloadUrl, getSubtitleDownloadUrl, listProjects } from '../services/api';
+import { listClips, deleteClip, getClipDownloadUrl, getSubtitleDownloadUrl, listProjects, resolveMediaUrl } from '../services/api';
 import ClipPlayerModal from '../components/ClipPlayerModal';
 
 export default function AllClips({ selectedProjectId, setSelectedProjectId }) {
@@ -216,7 +216,7 @@ export default function AllClips({ selectedProjectId, setSelectedProjectId }) {
                 <div className="relative aspect-[9/16] bg-black overflow-hidden">
                   {clip.thumbnail_url ? (
                     <img
-                      src={clip.thumbnail_url}
+                      src={resolveMediaUrl(clip.thumbnail_url)}
                       alt={clip.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

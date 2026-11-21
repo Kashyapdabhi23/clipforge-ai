@@ -10,7 +10,7 @@ import {
   Clock,
   Play
 } from 'lucide-react';
-import { getStats } from '../services/api';
+import { getStats, resolveMediaUrl } from '../services/api';
 
 export default function Dashboard({ setActiveTab, setSelectedProjectId }) {
   const [stats, setStats] = useState(null);
@@ -182,7 +182,7 @@ export default function Dashboard({ setActiveTab, setSelectedProjectId }) {
                   <div className="w-16 h-20 rounded-lg bg-black shrink-0 overflow-hidden relative border border-slate-800">
                     {proj.thumbnail_url ? (
                       <img
-                        src={proj.thumbnail_url}
+                        src={resolveMediaUrl(proj.thumbnail_url)}
                         alt={proj.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />

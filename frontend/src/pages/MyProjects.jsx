@@ -10,7 +10,7 @@ import {
   Loader2,
   Plus
 } from 'lucide-react';
-import { listProjects, deleteProject } from '../services/api';
+import { listProjects, deleteProject, resolveMediaUrl } from '../services/api';
 
 export default function MyProjects({ setActiveTab, setSelectedProjectId }) {
   const [projects, setProjects] = useState([]);
@@ -94,7 +94,7 @@ export default function MyProjects({ setActiveTab, setSelectedProjectId }) {
               <div className="aspect-video bg-black relative overflow-hidden">
                 {proj.thumbnail_url ? (
                   <img
-                    src={proj.thumbnail_url}
+                    src={resolveMediaUrl(proj.thumbnail_url)}
                     alt={proj.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

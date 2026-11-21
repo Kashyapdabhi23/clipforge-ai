@@ -9,7 +9,7 @@ import {
   Trash2,
   CheckCircle2
 } from 'lucide-react';
-import { getClipDownloadUrl, getSubtitleDownloadUrl } from '../services/api';
+import { getClipDownloadUrl, getSubtitleDownloadUrl, resolveMediaUrl } from '../services/api';
 
 export default function ClipPlayerModal({ clip, onClose, onDelete }) {
   const [downloadFormat, setDownloadFormat] = useState('srt');
@@ -38,7 +38,7 @@ export default function ClipPlayerModal({ clip, onClose, onDelete }) {
         {/* Left Side: Video Preview (9:16 Vertical responsive player) */}
         <div className="md:w-1/2 bg-black flex items-center justify-center relative min-h-[380px] p-2">
           <video
-            src={clip.video_url}
+            src={resolveMediaUrl(clip.video_url)}
             controls
             autoPlay
             loop
