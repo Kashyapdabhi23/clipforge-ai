@@ -1,12 +1,14 @@
 FROM python:3.11-slim
 
-# Install system dependencies including FFmpeg
+# Install system dependencies including FFmpeg and Node.js for YouTube JS solver
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    nodejs \
     git \
     curl \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && (which node || ln -s /usr/bin/nodejs /usr/bin/node)
 
 WORKDIR /app
 
